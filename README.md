@@ -100,8 +100,21 @@ or step through `vignettes/getting-started.Rmd`.
       `cellWalk$normMat` is a per-column Z-score (can go negative) — the
       probability matrix comes from row-normalizing the raw label-to-cell
       block of `cellWalk$infMat` instead (see script comments).
-- [ ] Finalize marker gene sets per cell type (paper supplementary table vs.
-      PanglaoDB cross-check)
+- [x] Finalize marker gene sets per cell type (paper supplementary table vs.
+      PanglaoDB cross-check). Cell.com (403) and PMC (reCAPTCHA) both block
+      automated access to Puram et al.'s actual supplementary PDF, so
+      `scripts/build_marker_genes.R` uses well-established canonical
+      lineage markers cross-checked against
+      [PanglaoDB](https://panglaodb.se/markers.html) instead of a verbatim
+      table transcription — someone with journal access should eventually
+      diff this against the real Table S1/S5. Validated the Tcell/Bcell
+      marker sets end-to-end against CellWalkR's bundled PBMC data: the
+      resulting soft labels closely tracked the paper's own ground-truth
+      annotations (531 vs. ~502 true T cells, 101 vs. ~92 true B cells).
+      Fibroblast/Endothelial/Mast/Malignant markers are sourced the same
+      way but can only be validated once real tumor tissue data (i.e. the
+      parsed GSE103322 dataset) is available, since PBMC has none of those
+      cell types.
 - [x] Implement permutation-based significance for soft LR scores
       (`soft_lr_significance()` in `R/soft_weighting.R`)
 - [ ] p-EMT score correlation with entropy

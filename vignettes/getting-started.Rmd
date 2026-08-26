@@ -1,0 +1,72 @@
+---
+title: "Getting Started: Soft Cell-Cell Communication"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started: Soft Cell-Cell Communication}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+## Why "soft" communication scoring?
+
+Standard ligand-receptor tools (CellChat, LIANA, CellPhoneDB) require every
+cell to be assigned one discrete cell type before communication scores are
+computed. That throws away exactly the information that's most interesting
+in transitional biology: cells that are genuinely *between* identities, like
+the partial-EMT malignant cells described in Puram et al. 2017.
+
+CellWalker already computes a full probability distribution over cell types
+for every cell via graph diffusion. This package uses that distribution
+directly as a weight, instead of collapsing it to `argmax` before handing
+things off to a communication tool.
+
+## Minimal end-to-end example (synthetic data)
+
+```{r}
+devtools::load_all("..")
+
+set.seed(1)
+n_genes <- 20
+n_cells <- 100
+gene_names <- c("TGFB1", "TGFBR2", "VEGFA", "KDR", "CXCL12", "CXCR4",
+                 "JAG1", "NOTCH1", "TNF", "TNFRSF1A",
+                 paste0("Gene", 1:10))
+
+expr_mat <- matrix(rpois(n_genes * n_cells, lambda = 2), nrow = n_genes,
+                    dimnames = list(gene_names, paste0("cell", 1:n_cells)))
+
+# Fake CellWalker output: 3 cell types, most cells confident, a few ambiguous
+types <- c("TypeA", "TypeB", "TypeC")
+type_probs <- matrix(0, nrow = n_cells, ncol = 3,
+                      dimnames = list(colnames(expr_mat), types))
+for (i in 1:n_cells) {
+  if (i %% 10 == 0) {
+    type_probs[i, ] <- c(0.34, 0.33, 0.33)  # ambiguous cell
+  } else {
+    dominant <- sample(types, 1)
+    type_probs[i, dominant] <- 0.8
+    type_probs[i, setdiff(types, dominant)] <- 0.1
+  }
+}
+
+entropy <- identity_entropy(type_probs)
+ambiguous <- flag_ambiguous_cells(entropy)
+
+lr_pairs <- example_lr_pairs()
+soft_expr <- weighted_type_expression(expr_mat, type_probs)
+hard_expr <- hard_type_expression(expr_mat, type_probs)
+
+soft_scores <- score_lr_pairs(soft_expr, lr_pairs)
+hard_scores <- score_lr_pairs(hard_expr, lr_pairs)
+compare_soft_hard(soft_scores, hard_scores)
+```
+
+## Real pipeline
+
+For the actual GSE103322 analysis, run `scripts/01_download_data.R` through
+`scripts/04_compare_networks.R` in order. See the repo README for the
+biological motivation and dataset details.

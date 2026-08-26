@@ -1,0 +1,30 @@
+Package: softcellcomm
+Title: Soft Cell-Cell Communication Scoring Using CellWalker Identity Probabilities
+Version: 0.0.0.9000
+Authors@R: person("Your", "Name", email = "you@example.com", role = c("aut", "cre"))
+Description: Extends CellWalker/CellWalkR's probabilistic cell-type diffusion
+    scores into ligand-receptor communication analysis. Instead of assigning
+    each cell a single hard cell-type label before computing communication
+    scores (as CellChat/LIANA/CellPhoneDB do), this package uses CellWalker's
+    full per-cell probability distribution over cell types as a weighting
+    scheme, producing continuous, identity-uncertainty-aware communication
+    networks. Applied here to a tumor microenvironment scRNA-seq dataset
+    with a known partial-EMT population as a validation case.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Depends: R (>= 4.1)
+Imports:
+    Matrix,
+    stats,
+    igraph
+Suggests:
+    Seurat,
+    GEOquery,
+    ggplot2,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr

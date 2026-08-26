@@ -118,3 +118,51 @@ compare_soft_hard <- function(soft_scores, hard_scores) {
   merged$diff <- merged$score_soft - merged$score_hard
   merged[order(-merged$diff), ]
 }
+
+#' Permutation-based significance for soft ligand-receptor scores
+#'
+#' Generalizes CellPhoneDB/CellChat-style permutation testing (shuffle which
+#' cluster each cell belongs to, recompute, see how often chance beats the
+#' observed score) to soft weights: shuffles which cell each row of
+#' `type_probs` belongs to, breaking the link between a cell's expression and
+#' its CellWalker identity distribution, and recomputes the soft LR score
+#' under that null. The p-value for a given (source, target, ligand,
+#' receptor) is the fraction of permutations whose null score is at least as
+#' large as the observed one.
+#'
+#' @inheritParams weighted_type_expression
+#' @param lr_pairs data.frame with columns `ligand`, `receptor`
+#' @param n_perm number of permutations (default 1000)
+#' @param p_adjust_method passed to `stats::p.adjust()` for the `q_value`
+#'   column (default "BH"); use "none" to skip adjustment
+#' @param seed optional seed for reproducibility
+#' @return the observed `score_lr_pairs()` table with added `p_value` and
+#'   `q_value` columns
+#' @export
+soft_lr_significance <- function(expr_mat, type_probs, lr_pairs, n_perm = 1000,
+                                  p_adjust_method = "BH", seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  observed_expr <- weighted_type_expression(expr_mat, type_probs)
+  observed <- score_lr_pairs(observed_expr, lr_pairs)
+
+  n_cells <- nrow(type_probs)
+  ge_count <- rep(0L, nrow(observed))
+
+  for (i in seq_len(n_perm)) {
+    perm_probs <- type_probs[sample.int(n_cells), , drop = FALSE]
+    rownames(perm_probs) <- rownames(type_probs)
+
+    perm_expr <- weighted_type_expression(expr_mat, perm_probs)
+    perm_scores <- score_lr_pairs(perm_expr, lr_pairs)
+
+    # perm_scores has identical row order to observed: same types/lr_pairs
+    # loop order in score_lr_pairs(), and expr_mat/lr_pairs are unchanged.
+    ge_count <- ge_count + (perm_scores$score >= observed$score)
+  }
+
+  # Add-one smoothing avoids a p-value of exactly 0 from a finite sample.
+  observed$p_value <- (ge_count + 1) / (n_perm + 1)
+  observed$q_value <- stats::p.adjust(observed$p_value, method = p_adjust_method)
+  observed
+}

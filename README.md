@@ -85,6 +85,7 @@ or step through `vignettes/getting-started.Rmd`.
       features used here — need `cellwalker2` branch)
 - [ ] Finalize marker gene sets per cell type (paper supplementary table vs.
       PanglaoDB cross-check)
-- [ ] Implement permutation-based significance for soft LR scores
+- [x] Implement permutation-based significance for soft LR scores
+      (`soft_lr_significance()` in `R/soft_weighting.R`)
 - [ ] p-EMT score correlation with entropy
 - [ ] Figures for README (hard vs soft network diagrams)

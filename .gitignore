@@ -15,3 +15,6 @@ figures/
 
 # OS
 .DS_Store
+
+# Claude Code local session config
+.claude/

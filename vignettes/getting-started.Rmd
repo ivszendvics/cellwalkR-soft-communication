@@ -65,6 +65,20 @@ hard_scores <- score_lr_pairs(hard_expr, lr_pairs)
 compare_soft_hard(soft_scores, hard_scores)
 ```
 
+## Is a soft score significant?
+
+A soft LR score can be large just because a ligand and receptor are both
+highly expressed overall, not because they're specifically co-expressed by
+cells confidently identified as the source/target types. `soft_lr_significance()`
+tests this the same way CellPhoneDB tests hard cluster scores: shuffle which
+cell owns which identity-probability vector, recompute the score under that
+null many times, and see how often chance beats the real value.
+
+```{r}
+sig <- soft_lr_significance(expr_mat, type_probs, lr_pairs, n_perm = 200, seed = 1)
+head(sig[order(sig$p_value), c("source", "target", "ligand", "receptor", "score", "p_value", "q_value")])
+```
+
 ## Real pipeline
 
 For the actual GSE103322 analysis, run `scripts/01_download_data.R` through

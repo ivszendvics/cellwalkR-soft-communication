@@ -51,6 +51,35 @@ to validate that CellWalker's ambiguity scores are picking up something real.
 Backup dataset: GSE72056 (Tirosh et al. 2016, melanoma) — simpler logistics,
 same cell-type diversity.
 
+**Data quirks worth knowing before touching this dataset again** (see comments
+in `scripts/01_download_data.R` for full detail): the public matrix has 6
+metadata rows (patient/site/malignancy/cell-type columns baked into the top of
+the file, not a separate file) before gene expression starts, values are
+already log2(TPM/10 + 1) — not raw counts — and patient IDs are only present
+as inconsistent `HN<n>`/`HNSCC<n>` prefixes in the cell barcodes themselves
+(plus a 109-cell pooled "combo" batch with no clean per-patient ID).
+
+## Results so far
+
+The full pipeline has been run end-to-end on the real dataset (not just
+synthetic data):
+
+- Parsed 5,902 cells — 2,215 malignant / 3,363 non-malignant / 324 the
+  paper's own authors couldn't confidently classify — matching the paper's
+  reported numbers exactly.
+- CellWalkR's soft labels (argmax) agree with the paper's own ground-truth
+  cell-type annotations at **96.9% accuracy** across the 6 non-malignant
+  types + malignant (worst per-type recall: Myeloid at 78.5%, likely because
+  Macrophage + Dendritic were pooled into one label).
+- The 324 cells the paper's authors themselves flagged as too ambiguous to
+  classify have the **highest identity entropy of any group** (mean 0.37,
+  vs. 0.15–0.25 for confidently-typed cells) — CellWalker's entropy score
+  agrees with the original authors' own judgment calls about which cells
+  were hard to type, independent evidence the core premise holds.
+- Soft-vs-hard network comparison produces real (if placeholder-LR-list)
+  results — see `figures/soft_vs_hard_top_edges.png` after running
+  `scripts/04_compare_networks.R` (gitignored, regenerate locally).
+
 ## Repo structure
 
 ```
@@ -117,5 +146,24 @@ or step through `vignettes/getting-started.Rmd`.
       cell types.
 - [x] Implement permutation-based significance for soft LR scores
       (`soft_lr_significance()` in `R/soft_weighting.R`)
-- [ ] p-EMT score correlation with entropy
-- [ ] Figures for README (hard vs soft network diagrams)
+- [x] Download + parse the real GSE103322 data
+      (`scripts/01_download_data.R`) and run the full pipeline
+      (`scripts/02_run_cellwalker.R` through `04_compare_networks.R`)
+      end-to-end against it. See "Results so far" above. One additional
+      wrinkle discovered along the way: GSE103322's public matrix is
+      already log-normalized, not raw counts, so
+      `CellWalkR::processRNASeq()` can't be used directly (it always calls
+      `Seurat::NormalizeData()`, which would double-transform already-
+      normalized values) — `scripts/02_run_cellwalker.R` replicates the
+      rest of its pipeline manually instead, documented inline.
+- [ ] p-EMT score correlation with entropy — blocked on the same
+      Cell.com/PMC access issue as the marker gene sourcing above; the
+      p-EMT score isn't in the public expression matrix's own metadata
+      rows, it lives in a separate supplementary table.
+- [ ] Swap `example_lr_pairs()`'s 5-pair placeholder for LIANA's consensus
+      resource (`scripts/03_soft_communication.R`) — the current soft-vs-
+      hard comparison is real but dominated by one chemokine axis
+      (CXCL12-CXCR4) simply because the LR list is so small.
+- [ ] Polish + commit a real figure for the README (hard vs soft network
+      diagram) — blocked on the above, since the current one isn't
+      representative enough to be worth freezing into the repo yet.

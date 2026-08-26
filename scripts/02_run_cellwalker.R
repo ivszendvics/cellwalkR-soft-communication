@@ -23,6 +23,35 @@ parsed <- readRDS("data/gse103322_parsed.rds")
 expr <- parsed$expr
 cell_meta <- parsed$meta
 
+# --- Handle GSE103322's already-normalized values ---
+# GSE103322's public matrix is already log2(TPM/10 + 1) (Tirosh-lab
+# convention), NOT raw counts -- confirmed by inspecting the raw file in
+# scripts/01_download_data.R. CellWalkR::processRNASeq() unconditionally
+# calls Seurat::NormalizeData() internally, which would log-transform this
+# a second time. There's no raw-count matrix published for this series to
+# fall back to, so this replicates the rest of processRNASeq()'s pipeline
+# (FindVariableFeatures -> ScaleData -> RunPCA -> FindNeighbors) starting
+# from the already-normalized values instead of calling NormalizeData().
+# Caveat: Seurat's default "vst" variable-feature selection expects raw
+# counts to fit its mean-variance trend; running it on already-log values
+# is an accepted practical compromise when only a processed matrix is
+# public (common when reanalyzing older datasets), but it means the
+# variable-feature set (and therefore the PCA-based cell-cell KNN graph)
+# is somewhat less principled than it would be starting from real counts.
+# This doesn't affect the core soft-vs-hard LR scoring in
+# R/soft_weighting.R, which uses literal marker-gene expression values,
+# not the variable-feature set.
+prenormalized_rnaseq_graph <- function(expr_norm, dims = 1:20, knn = 20, nfeatures = 3000) {
+  obj <- Seurat::CreateSeuratObject(counts = expr_norm)
+  obj <- Seurat::SetAssayData(obj, slot = "data", new.data = expr_norm)
+  obj <- Seurat::FindVariableFeatures(obj, nfeatures = nfeatures)
+  obj <- Seurat::ScaleData(obj, features = rownames(expr_norm))
+  obj <- Seurat::RunPCA(obj, verbose = FALSE)
+  obj <- Seurat::FindNeighbors(obj, dims = dims, k.param = knn)
+  list(expr_norm = Seurat::GetAssayData(obj, slot = "scale.data"),
+       cellGraph = obj@graphs$RNA_snn)
+}
+
 # --- Marker gene sets ---
 # Start from Puram et al.'s supplementary marker tables (Table S1/S5 in the
 # paper) for malignant, fibroblast, T cell, B cell, myeloid, endothelial,
@@ -40,10 +69,8 @@ cell_meta <- parsed$meta
 # )
 marker_list <- readRDS("data/marker_genes.rds")  # build this from the paper's supplement
 
-# --- Preprocess with Seurat (normalize, build cell-cell KNN graph) ---
-# do.findMarkers = FALSE / group.col = NULL: we supply curated markers
-# ourselves rather than deriving them from a Seurat clustering pass.
-dataset <- processRNASeq(expr, do.findMarkers = FALSE, computeKNN = TRUE)
+# --- Preprocess (build cell-cell KNN graph from already-normalized data) ---
+dataset <- prenormalized_rnaseq_graph(expr)
 
 # --- Cell-to-label edges from curated markers ---
 # computeTypeEdges() expects a markers data.frame with columns gene, cluster,

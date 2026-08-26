@@ -17,10 +17,19 @@ ambiguous <- flag_ambiguous_cells(entropy, quantile_cutoff = 0.9)
 message(sum(ambiguous), " cells flagged as high-ambiguity (top 10% entropy)")
 
 # --- Ligand-receptor resource ---
-# Swap this for a full curated resource once the pipeline runs end-to-end:
-#   lr_pairs <- liana::select_resource("consensus")[[1]][, c("source_genesymbol", "target_genesymbol")]
-#   colnames(lr_pairs) <- c("ligand", "receptor")
-lr_pairs <- example_lr_pairs()
+# LIANA's resource name is "Consensus" (capitalized) -- select_resource() is
+# case-sensitive and silently returns NULL on "consensus", not an error.
+# The resource includes multi-subunit complexes as underscore-joined gene
+# symbols (e.g. "ITGA4_ITGB7") in ~23% of rows; score_lr_pairs() expects a
+# single gene symbol per side (matching a single row of the expression
+# matrix), so complex entries are dropped here rather than expanded/summed.
+# That leaves 3,607 simple pairs, 3,394 of which have both genes present in
+# GSE103322's matrix.
+consensus <- liana::select_resource("Consensus")[[1]]
+is_complex <- grepl("_", consensus$source_genesymbol) | grepl("_", consensus$target_genesymbol)
+lr_pairs <- consensus[!is_complex, c("source_genesymbol", "target_genesymbol")]
+colnames(lr_pairs) <- c("ligand", "receptor")
+lr_pairs <- unique(lr_pairs)
 
 # --- Soft vs hard type-level expression ---
 soft_expr <- weighted_type_expression(expr_mat, type_probs)

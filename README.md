@@ -76,9 +76,13 @@ synthetic data):
   vs. 0.15–0.25 for confidently-typed cells) — CellWalker's entropy score
   agrees with the original authors' own judgment calls about which cells
   were hard to type, independent evidence the core premise holds.
-- Soft-vs-hard network comparison produces real (if placeholder-LR-list)
-  results — see `figures/soft_vs_hard_top_edges.png` after running
-  `scripts/04_compare_networks.R` (gitignored, regenerate locally).
+- Soft-vs-hard network comparison using LIANA's real ~3,400-pair consensus
+  resource (not a placeholder) surfaces edges across most cell-type pairs,
+  including malignant-cell signaling (e.g. Malignant → Myeloid HMGB1-SDC1,
+  Malignant → Endothelial PKM-CD44) that a hard-label network would score
+  lower:
+
+  ![Top interactions gained under soft weighting](figures/soft_vs_hard_top_edges.png)
 
 ## Repo structure
 
@@ -160,10 +164,16 @@ or step through `vignettes/getting-started.Rmd`.
       Cell.com/PMC access issue as the marker gene sourcing above; the
       p-EMT score isn't in the public expression matrix's own metadata
       rows, it lives in a separate supplementary table.
-- [ ] Swap `example_lr_pairs()`'s 5-pair placeholder for LIANA's consensus
-      resource (`scripts/03_soft_communication.R`) — the current soft-vs-
-      hard comparison is real but dominated by one chemokine axis
-      (CXCL12-CXCR4) simply because the LR list is so small.
-- [ ] Polish + commit a real figure for the README (hard vs soft network
-      diagram) — blocked on the above, since the current one isn't
-      representative enough to be worth freezing into the repo yet.
+- [x] Swap `example_lr_pairs()`'s 5-pair placeholder for LIANA's consensus
+      resource (`scripts/03_soft_communication.R`). Two API surprises:
+      the resource name is `"Consensus"` (capitalized) —
+      `select_resource("consensus")` is case-sensitive and silently
+      returns `NULL` rather than erroring — and ~23% of entries are
+      multi-subunit complexes as underscore-joined gene symbols (e.g.
+      `"ITGA4_ITGB7"`), which `score_lr_pairs()` can't use (it expects one
+      gene symbol per side matching one row of the expression matrix), so
+      those rows are dropped rather than expanded/summed. That leaves
+      3,607 simple pairs, 3,394 with both genes present in GSE103322.
+- [x] Polish + commit a real figure for the README (hard vs soft network
+      diagram) — done now that the LR resource is real; see "Results so
+      far" above.

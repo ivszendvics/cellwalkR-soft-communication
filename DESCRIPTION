@@ -23,12 +23,14 @@ Suggests:
     Seurat (>= 4.3, < 5.0),
     SeuratObject (< 5.0),
     CellWalkR,
+    liana,
     GEOquery,
     ggplot2,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown
 Remotes:
-    PFPrzytycki/CellWalkR@cellwalker2
+    PFPrzytycki/CellWalkR@cellwalker2,
+    saezlab/liana
 Config/testthat/edition: 3
 VignetteBuilder: knitr

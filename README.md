@@ -84,6 +84,25 @@ synthetic data):
 
   ![Top interactions gained under soft weighting](figures/soft_vs_hard_top_edges.png)
 
+- **p-EMT correlation — real, but not in the direction the motivating
+  question expected.** Identity entropy is significantly *negatively*
+  correlated with p-EMT score among malignant cells (Spearman rho = -0.24,
+  p < 2e-16, n = 2,215; robust to controlling for library complexity —
+  partial rho still -0.24). Higher p-EMT does **not** make CellWalker more
+  uncertain between Malignant and Fibroblast; instead cells become *more*
+  confidently classified as Malignant as p-EMT rises (mean Malignant
+  probability 0.83 → 0.89 across p-EMT quartiles), while mean Fibroblast
+  probability barely moves (0.006 → 0.009). Most likely explanation: this
+  project's marker panel uses only 6 broad-lineage genes per type, none
+  p-EMT-specific, and none of the Fibroblast markers (COL1A1, COL1A2,
+  COL3A1, DCN, PDGFRA, PDGFRB) are part of the p-EMT signature itself — so
+  a coarse lineage-marker CellWalker setup isn't well-positioned to detect
+  a transitional identity shift the way a p-EMT-aware marker set might.
+  This is a real, reported result rather than confirmation of the original
+  hypothesis:
+
+  ![Identity entropy vs. p-EMT score](figures/pemt_entropy_correlation.png)
+
 ## Repo structure
 
 ```
@@ -160,10 +179,18 @@ or step through `vignettes/getting-started.Rmd`.
       `Seurat::NormalizeData()`, which would double-transform already-
       normalized values) — `scripts/02_run_cellwalker.R` replicates the
       rest of its pipeline manually instead, documented inline.
-- [ ] p-EMT score correlation with entropy — blocked on the same
-      Cell.com/PMC access issue as the marker gene sourcing above; the
-      p-EMT score isn't in the public expression matrix's own metadata
-      rows, it lives in a separate supplementary table.
+- [x] p-EMT score correlation with entropy. The user retrieved Puram et
+      al.'s actual supplementary PDF and shared it directly (Table S7),
+      which resolved the Cell.com/PMC access block. Turned out Table S7
+      doesn't publish per-cell p-EMT scores at all — it publishes the
+      p-EMT gene SIGNATURE (the NNMF-derived marker genes), so the score
+      itself had to be computed here via `Seurat::AddModuleScore()`
+      (`scripts/build_pemt_signature.R` + the p-EMT block in
+      `scripts/04_compare_networks.R`). One gene of the ~100-gene
+      signature was lost to the PDF's dense multi-column table layout
+      during transcription (99 recovered) — accepted rather than guessed.
+      See "Results so far" above for the (genuinely surprising, not
+      hypothesis-confirming) finding.
 - [x] Swap `example_lr_pairs()`'s 5-pair placeholder for LIANA's consensus
       resource (`scripts/03_soft_communication.R`). Two API surprises:
       the resource name is `"Consensus"` (capitalized) —

@@ -29,6 +29,29 @@ flag_ambiguous_cells <- function(entropy, quantile_cutoff = 0.9) {
   entropy >= stats::quantile(entropy, quantile_cutoff, na.rm = TRUE)
 }
 
+#' Convert a named list of marker genes into CellWalkR's markers table
+#'
+#' `CellWalkR::computeTypeEdges()` expects a data.frame with columns `gene`,
+#' `cluster`, and (optionally) `avg_log2FC` used to weight/filter markers. A
+#' curated marker set (e.g. from a paper's supplementary table) doesn't carry
+#' an empirical fold-change, so this assigns a constant `avg_log2FC` of 1 to
+#' every marker -- pass `log2FC.cutoff = 0` to `computeTypeEdges()` so that
+#' placeholder value doesn't filter any markers out.
+#'
+#' @param marker_list named list, one character vector of marker genes per
+#'   cell type (the format built for `scripts/02_run_cellwalker.R`)
+#' @return data.frame with columns gene, cluster, avg_log2FC
+#' @export
+markers_from_list <- function(marker_list) {
+  stopifnot(!is.null(names(marker_list)), all(names(marker_list) != ""))
+  data.frame(
+    gene = unlist(marker_list, use.names = FALSE),
+    cluster = rep(names(marker_list), lengths(marker_list)),
+    avg_log2FC = 1,
+    stringsAsFactors = FALSE
+  )
+}
+
 #' Minimal curated ligand-receptor pair table (placeholder)
 #'
 #' A tiny starter set so the pipeline runs end-to-end before you swap in a

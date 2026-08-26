@@ -20,11 +20,15 @@ Imports:
     stats,
     igraph
 Suggests:
-    Seurat,
+    Seurat (>= 4.3, < 5.0),
+    SeuratObject (< 5.0),
+    CellWalkR,
     GEOquery,
     ggplot2,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown
+Remotes:
+    PFPrzytycki/CellWalkR@cellwalker2
 Config/testthat/edition: 3
 VignetteBuilder: knitr

@@ -69,7 +69,17 @@ data/               Raw + processed data (gitignored except for small refs)
 ## Setup
 
 ```r
-install.packages(c("Seurat", "Matrix", "igraph", "ggplot2", "GEOquery", "devtools"))
+install.packages(c("Matrix", "igraph", "ggplot2", "GEOquery", "devtools", "remotes"))
+
+# CellWalkR's cellwalker2 branch pins Seurat to (>= 4.3, < 5.0). If you
+# already have Seurat 5.x (the CRAN default), processRNASeq() will fail
+# inside Seurat::RunPCA() with "subscript out of bounds" -- CellWalkR calls
+# RunPCA() without explicit `features =`, relying on Seurat 4.x's default
+# feature-resolution behavior. SeuratObject must be downgraded to match too
+# (5.x removes the `slot=` argument Seurat 4.x's internals use):
+remotes::install_version("Seurat", version = "4.4.0")
+remotes::install_version("SeuratObject", version = "4.1.4")
+
 devtools::install_github("PFPrzytycki/CellWalkR", ref = "cellwalker2")
 # LIANA gives a convenient curated ligand-receptor resource, even though we
 # bypass its scoring engine:
@@ -81,8 +91,15 @@ or step through `vignettes/getting-started.Rmd`.
 
 ## Status / TODO
 
-- [ ] Confirm CellWalkR install path (CRAN version predates hierarchical
-      features used here — need `cellwalker2` branch)
+- [x] Confirm CellWalkR install path (CRAN version predates hierarchical
+      features used here — need `cellwalker2` branch). Confirmed and pinned
+      Seurat/SeuratObject versions (see Setup); rewrote
+      `scripts/02_run_cellwalker.R` against the real `processRNASeq()` /
+      `computeTypeEdges()` / `annotateCells()` API, verified end-to-end
+      against CellWalkR's own bundled sample data. Note:
+      `cellWalk$normMat` is a per-column Z-score (can go negative) — the
+      probability matrix comes from row-normalizing the raw label-to-cell
+      block of `cellWalk$infMat` instead (see script comments).
 - [ ] Finalize marker gene sets per cell type (paper supplementary table vs.
       PanglaoDB cross-check)
 - [x] Implement permutation-based significance for soft LR scores

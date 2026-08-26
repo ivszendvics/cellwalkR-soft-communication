@@ -19,6 +19,17 @@ test_that("identity_entropy is 0 for confident cells and ~1 for uniform cells", 
   expect_equal(unname(ent["c2"]), 1, tolerance = 1e-10)
 })
 
+test_that("markers_from_list converts a named marker list to CellWalkR's table format", {
+  marker_list <- list(TypeA = c("G1", "G2"), TypeB = c("G3"))
+  markers <- markers_from_list(marker_list)
+
+  expect_equal(colnames(markers), c("gene", "cluster", "avg_log2FC"))
+  expect_equal(nrow(markers), 3)
+  expect_equal(markers$gene, c("G1", "G2", "G3"))
+  expect_equal(markers$cluster, c("TypeA", "TypeA", "TypeB"))
+  expect_true(all(markers$avg_log2FC == 1))
+})
+
 test_that("score_lr_pairs produces one row per source-target-pair combination", {
   type_expr <- matrix(c(1, 2, 3, 4), nrow = 2,
                        dimnames = list(c("LIG1", "REC1"), c("TypeA", "TypeB")))
